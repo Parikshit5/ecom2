@@ -2,6 +2,7 @@ import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import { WriteResponse } from "../helpers/response.js"
 import { maildata, transporter } from "../helpers/transporter.js";
 import userModel from "../models/userModel.js";
+import JWT from 'jsonwebtoken';
 
 export const registerController=async(req,res)=>{
     try {
@@ -60,6 +61,35 @@ export const registerController=async(req,res)=>{
     } catch (error) {
         console.log(error);
         return WriteResponse(res,500,"Internal Server error",null);
+    }
+}
+
+export const loginController=async(req,res)=>{
+    try {
+        const {email,password}=req.body;
+        //validation
+        if(!email || !password){
+           return WriteResponse(res,402,"error:Invalid email or password",null); 
+        }
+        //check user
+        const user=await userModel.findOne({email});
+        if(!user){
+            return WriteResponse(res, 404, "Account does not exist with this email.",null);
+         }
+        const match = await comparePassword(user.password,password);
+        if(!match){
+            return WriteResponse(res,401,"Invalid Password",null);
+        }
+        //token
+        const token=await JWT.sign({_id:user.id},process.env.JWT_SECRET,{expiresIn:"7d"});
+        const data={
+            _id:user.id,
+            email:user.email,
+            token:token
+        }
+        return WriteResponse(res,200,"Login Successful",data);
+    } catch (error) {
+        return WriteResponse(res,500,"Internal Server Error",null);
     }
 }
 

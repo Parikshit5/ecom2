@@ -20,7 +20,7 @@
             {
                 name: 'authentication',
                 description: 'Operations about user authentication'
-            }
+            },
         ]
         },
         apis: ['./routes/*.js'], // Path to the API routes
