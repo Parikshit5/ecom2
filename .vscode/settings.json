@@ -1,0 +1,8 @@
+{
+    "appService.zipIgnorePattern": [
+        "node_modules{,/**}",
+        ".vscode{,/**}"
+    ],
+    "appService.defaultWebAppToDeploy": "/subscriptions/07da44a3-1346-425d-b996-a95807f64a2a/resourceGroups/practice32_group/providers/Microsoft.Web/sites/practice32",
+    "appService.deploySubpath": "dist"
+}
