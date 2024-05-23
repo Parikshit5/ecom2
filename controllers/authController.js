@@ -1,12 +1,15 @@
 import { comparePassword, hashPassword } from "../helpers/authHelper.js";
 import { WriteResponse } from "../helpers/response.js"
 import { maildata, transporter } from "../helpers/transporter.js";
+import otpModel from "../models/otpModel.js";
 import userModel from "../models/userModel.js";
 import JWT from 'jsonwebtoken';
 
+
+
 export const registerController=async(req,res)=>{
     try {
-        // throw new Error({'hehe':'haha'});
+        // throw new Error({'error':'error'});
 
         //Validate name
         if (!req.body.name || req.body.name.length > 100 || !/^[a-zA-Z\s]+$/.test(req.body.name)) {
@@ -81,7 +84,7 @@ export const loginController=async(req,res)=>{
             return WriteResponse(res,401,"Invalid Password",null);
         }
         //token
-        const token=await JWT.sign({_id:user.id},process.env.JWT_SECRET,{expiresIn:"7d"});
+        const token=await JWT.sign({_id:user.id},process.env.JWT_SECRET,{expiresIn:"1d"});
         const data={
             _id:user.id,
             email:user.email,
@@ -93,10 +96,57 @@ export const loginController=async(req,res)=>{
     }
 }
 
+export const forgetPasswordController = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await userModel.findOne({ email });
+        
+        if (!user) {
+            return WriteResponse(res, 404, "Account with this Email does not exist.", null);
+        }
+        
+        const otp = generateRandomOtp();
+        const existing_user=await otpModel.findOne({email})
+        console.log("existing_user---------------->",existing_user);
+        const currentTime = Date.now();
+        if(existing_user && (currentTime - new Date(existing_user.createdAt).getTime() < 10 * 60 * 1000)){
+            await otpModel.deleteOne({email});
+        }
+        await otpModel.create({
+            email: email, 
+            otp:otp,
+        })
+    
+        const msg = `You are receiving this email because a request to reset your password was received for your account.<br><br>
+
+Your one-time password (OTP) for password reset is: <b>${otp}</b><br><br>
+
+For security reasons, please do not share this OTP with anyone. Enter this OTP on the password reset page to complete the process.<br><br>
+
+If you did not request a password reset, please ignore this email or contact our support team immediately.`;
+
+    
+        const mail = maildata(email, "Password Reset OTP", msg, `<b>${msg}</b>`);
+        // console.log(mail);
+        transporter.sendMail(mail, (err, info) => {
+            if (err) {
+                console.log(err);
+                return WriteResponse(res, 500, "Error sending email.", null);
+            }
+        });
+
+    
+        return WriteResponse(res, 200, "OTP sent to your email id successfully.", null);
+    } catch (error) {
+        console.log(error);
+        return WriteResponse(res, 500, "Internal Server Error", null);
+    }
+};
+
 export const contactController=async(req,res)=>{
     try {
         const mail=maildata('iprincepurohit@gmail.com',"test","first email text",'<b>kya baat h</b>');
-        console.log(mail);
+        // console.log(mail);
         transporter.sendMail(mail,(err, info)=>{
             if(err)
               console.log(err)
@@ -109,6 +159,21 @@ export const contactController=async(req,res)=>{
         console.log(error);
     }
 }
+
+export const verifyOtp=async(req,res)=> {
+    const {email,otp}=req.body;
+
+    const result = await otpVerification(email,otp);
+
+    if (result =='EXPIRED') {
+        return WriteResponse(res,402,'Sorry, this OTP has expired.',null);
+      } else if (result == 'INVALID') {
+        return WriteResponse(res,402,"Invalid OTP",null);
+      }
+  
+      return WriteResponse(res,201,"OTP verified successfully.",null);
+  }
+
 
 //check the email is valid or not
 function isValidEmail(email){
@@ -125,4 +190,36 @@ function isValidPassword(password){
     const passwordRegex= /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,}$/;
     return passwordRegex.test(password);
 
+}
+
+function generateRandomOtp(){
+    const charset = '1234567890';
+    let password = '';
+    
+    for (let i = 0; i <6; i++) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      password += charset[randomIndex];
+    }
+    
+    return password;
+  }
+
+async function otpVerification(email, otp){
+    const storedOtp = await otpModel.findOne({email});
+
+    if (!storedOtp) {
+        return 'INVALID';
+    }
+
+    if (Date.now() - new Date(storedOtp.createdAt).getTime() > 600000) { //60,000 ,600000
+        await otpModel.deleteOne({email});
+        return 'EXPIRED';
+    }
+
+    if (storedOtp.otp !== otp) {
+        return 'INVALID';
+    }
+
+    await otpModel.deleteOne({email});
+    return 'VALID';
 }

@@ -1,5 +1,5 @@
 import express from 'express';
-import {contactController, loginController, registerController} from '../controllers/authController.js';
+import {contactController, forgetPasswordController, loginController, registerController, verifyOtp} from '../controllers/authController.js';
 import { requireSignIn } from '../middlewares/authMiddleware.js';
 
 //router object
@@ -61,6 +61,52 @@ router.post('/register',registerController);
  */
 
 router.post('/login',loginController);
+
+/**
+ * @swagger
+ * /api/auth/forgetPassword:
+ *   post:
+ *     tags: [authentication]
+ *     description: Sample POST route description
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Returns a success message
+ */
+
+router.post('/forgetPassword',forgetPasswordController);
+
+
+/**
+ * @swagger
+ * /api/auth/verifyOtp:
+ *   post:
+ *     tags: [authentication]
+ *     description: Sample POST route description
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Returns a success message
+ */
+
+router.post('/verifyOtp',verifyOtp);
+
 
 /**
  * @swagger
