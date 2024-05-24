@@ -1,6 +1,6 @@
 import express from 'express';
 import {contactController, forgetPasswordController, loginController, registerController, verifyOtp} from '../controllers/authController.js';
-import { requireSignIn } from '../middlewares/authMiddleware.js';
+import { isAdmin, requireSignIn } from '../middlewares/authMiddleware.js';
 
 //router object
 const router=express.Router()
@@ -144,7 +144,7 @@ router.post('/verifyOtp',verifyOtp);
  *       500:
  *         description: Internal Server Error
  */
-router.post('/send_mail',requireSignIn,contactController);
+router.post('/send_mail',requireSignIn,isAdmin,contactController);
 
 
 

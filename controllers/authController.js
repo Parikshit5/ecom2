@@ -85,11 +85,15 @@ export const loginController=async(req,res)=>{
         }
         //token
         const token=await JWT.sign({_id:user.id},process.env.JWT_SECRET,{expiresIn:"1d"});
-        const data={
+        const userData={
             _id:user.id,
             email:user.email,
-            token:token
+            phone:user.phone,
+            address:user.address
         }
+        const data={};
+        data.user=userData;
+        data.token=token;
         return WriteResponse(res,200,"Login Successful",data);
     } catch (error) {
         return WriteResponse(res,500,"Internal Server Error",null);
